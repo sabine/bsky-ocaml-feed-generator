@@ -38,8 +38,7 @@ export class FirehoseSubscription extends FirehoseSubscriptionBase {
         const postTime = new Date(create.record.createdAt).getTime()
         const timeCutoff = Date.now() - (48 * 60 * 60 * 1000)
         const matches = postTime > timeCutoff &&
-          (create.record.text.toLowerCase().includes('ocaml')
-           || create.record.text.toLowerCase().includes('🐫'))
+          (create.record.text.toLowerCase().includes('ocaml'))
         if (matches) this.metrics.matchingPosts++
         return matches
       })
