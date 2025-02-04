@@ -16,19 +16,36 @@ import { Database } from '../db'
 export abstract class FirehoseSubscriptionBase {
   public sub: Subscription<RepoEvent>
 
-  constructor(public db: Database, public service: string) {
+  constructor(
+    public db: Database,
+    public service: string,
+  ) {
     this.sub = new Subscription({
       service: service,
       method: ids.ComAtprotoSyncSubscribeRepos,
       getParams: () => this.getCursor(),
       validate: (value: unknown) => {
         try {
+          // Add type checking and conversion for seq if present
+          if (value && typeof value === 'object' && 'seq' in value) {
+            const val = value as any
+            // Convert seq to integer if it's not already
+            if (val.seq !== undefined) {
+              val.seq = parseInt(String(val.seq), 10)
+              if (isNaN(val.seq)) {
+                console.error('Invalid seq value:', val.seq)
+                return undefined
+              }
+            }
+          }
+
           return lexicons.assertValidXrpcMessage<RepoEvent>(
             ids.ComAtprotoSyncSubscribeRepos,
             value,
           )
         } catch (err) {
           console.error('repo subscription skipped invalid message', err)
+          return undefined // Return undefined instead of throwing
         }
       },
     })
@@ -183,9 +200,12 @@ const fixBlobRefs = (obj: unknown): unknown => {
       const blob = obj as BlobRef
       return new BlobRef(blob.ref, blob.mimeType, blob.size, blob.original)
     }
-    return Object.entries(obj).reduce((acc, [key, val]) => {
-      return Object.assign(acc, { [key]: fixBlobRefs(val) })
-    }, {} as Record<string, unknown>)
+    return Object.entries(obj).reduce(
+      (acc, [key, val]) => {
+        return Object.assign(acc, { [key]: fixBlobRefs(val) })
+      },
+      {} as Record<string, unknown>,
+    )
   }
   return obj
 }
