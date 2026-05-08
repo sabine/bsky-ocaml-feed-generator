@@ -37,8 +37,9 @@ export class FirehoseSubscription extends FirehoseSubscriptionBase {
         // Filter for ocaml-related posts from last 48 hours
         const postTime = new Date(create.record.createdAt).getTime()
         const timeCutoff = Date.now() - (48 * 60 * 60 * 1000)
+        const text = create.record.text.toLowerCase()
         const matches = postTime > timeCutoff &&
-          (create.record.text.toLowerCase().includes('ocaml'))
+          (text.includes('ocaml') || text.includes('oxcaml'))
         if (matches) this.metrics.matchingPosts++
         return matches
       })
